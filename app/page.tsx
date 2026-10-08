@@ -81,6 +81,7 @@ export default function HomePage() {
   const [riskLoading, setRiskLoading] = useState(false);
   const [riskError, setRiskError] = useState("");
   const [events, setEvents] = useState<SentinelEvent[]>([]);
+  const [eventSearch, setEventSearch] = useState("");
   const [cursor, setCursor] = useState<string | null>(null);
   const [eventsLoading, setEventsLoading] = useState(true);
   const [eventsError, setEventsError] = useState("");
@@ -191,6 +192,10 @@ export default function HomePage() {
   const rpcHealthy = network?.status.toLowerCase() === "healthy";
   const rpcLabel = network?.status || "unknown";
   const currentNetwork = networkName(network?.network);
+  const normalizedEventSearch = eventSearch.trim().toLowerCase();
+  const visibleEvents = events.filter((item) =>
+    `${item.subject} ${item.agent}`.toLowerCase().includes(normalizedEventSearch),
+  );
 
   function sectionNavigation(className: string, label: string) {
     return <nav className={className} aria-label={label}>
@@ -240,7 +245,8 @@ export default function HomePage() {
             <div className="panel-heading events-heading"><div><div className="eyebrow">SOROBAN CONTRACT ACTIVITY</div><h2>Flag events</h2><p>Threshold alerts recorded by the Stellar Sentinel contract.</p></div><div className="event-actions"><button className="secondary-button" type="button" onClick={() => downloadEventsCsv(events)} disabled={events.length === 0}>Export CSV</button><button className="icon-button" onClick={() => void loadEvents()} disabled={eventsLoading} aria-label="Refresh events">↻</button></div></div>
             <div className="events-panel panel">
               {eventsLoading && events.length === 0 ? <div className="state-message"><span className="spinner dark"/><b>Loading contract events</b><span>Checking the connected Soroban event source…</span></div> : eventsError && events.length === 0 ? <div className="state-message"><span className="state-icon warning">!</span><b>Event feed unavailable</b><span>{eventsError}</span><small>Configure the contract and Soroban RPC in the backend to enable this feed.</small><button className="secondary-button" onClick={() => void loadEvents(eventsRetry?.next, eventsRetry?.append ?? false)}>Try again</button></div> : events.length === 0 ? <div className="state-message"><span className="state-icon">◷</span><b>No flag events yet</b><span>The connected contract has not returned any events.</span></div> : <>
-                <div className="table-scroll"><table><thead><tr><th>ACCOUNT</th><th>SCORE</th><th>AGENT</th><th>LEDGER</th><th>RECORDED</th></tr></thead><tbody>{events.map((item) => <tr key={item.id}><td className="signal-name"><span className="severity-dot high"/><button className="event-investigate" type="button" disabled={riskLoading} aria-label={`Analyze account ${item.subject}`} onClick={() => investigateEvent(item.subject)}>{shortAddress(item.subject)} ↗</button></td><td><span className="event-score">{item.score}</span></td><td className="mono">{shortAddress(item.agent)}</td><td className="mono">{item.ledger.toLocaleString()}</td><td>{formatDate(item.created_at)}</td></tr>)}</tbody></table></div>
+                <label className="event-search"><span className="sr-only">Search loaded events by account or agent</span><input value={eventSearch} onChange={(event) => setEventSearch(event.target.value)} placeholder="Filter loaded events by account or agent"/></label>
+                {visibleEvents.length > 0 ? <div className="table-scroll"><table><thead><tr><th>ACCOUNT</th><th>SCORE</th><th>AGENT</th><th>LEDGER</th><th>RECORDED</th></tr></thead><tbody>{visibleEvents.map((item) => <tr key={item.id}><td className="signal-name"><span className="severity-dot high"/><button className="event-investigate" type="button" disabled={riskLoading} aria-label={`Analyze account ${item.subject}`} onClick={() => investigateEvent(item.subject)}>{shortAddress(item.subject)} ↗</button></td><td><span className="event-score">{item.score}</span></td><td className="mono">{shortAddress(item.agent)}</td><td className="mono">{item.ledger.toLocaleString()}</td><td>{formatDate(item.created_at)}</td></tr>)}</tbody></table></div> : <div className="empty-inline event-search-empty">No loaded events match this account or agent.</div>}
                 {eventsError ? <div className="load-more load-more-error" role="alert"><span>{eventsError}</span><button className="secondary-button" disabled={eventsLoading} onClick={() => void loadEvents(eventsRetry?.next, eventsRetry?.append ?? false)}>{eventsLoading ? "Retrying…" : eventsRetry?.append ? "Retry loading older events" : "Retry refresh"}</button></div> : cursor && <div className="load-more"><button className="secondary-button" disabled={eventsLoading} onClick={() => void loadEvents(cursor, true)}>{eventsLoading ? "Loading…" : "Load older events"}</button></div>}
               </>}
             </div>
