@@ -89,7 +89,6 @@ function ExplorerLink({ network, type, value, label, accessibleLabel }: { networ
     ? <a className="mono explorer-link" href={href} target="_blank" rel="noopener noreferrer" aria-label={accessibleLabel}>{label} ↗</a>
     : <span className="mono">{label}</span>;
 }
-}
 
 export default function HomePage() {
   const [address, setAddress] = useState("");
