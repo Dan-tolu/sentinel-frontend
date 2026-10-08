@@ -89,6 +89,7 @@ export default function HomePage() {
   const [eventsLoading, setEventsLoading] = useState(true);
   const [eventsError, setEventsError] = useState("");
   const [eventsRetry, setEventsRetry] = useState<EventRetry | null>(null);
+  const [eventsNetwork, setEventsNetwork] = useState("");
   const [apiOnline, setApiOnline] = useState<boolean | null>(null);
   const [network, setNetwork] = useState<NetworkStatus | null>(null);
   const [networkLoading, setNetworkLoading] = useState(true);
@@ -139,6 +140,7 @@ export default function HomePage() {
       const page = await api<EventPage>(`/events?${query.toString()}`);
       setEvents((current) => append ? [...current, ...page.events] : page.events);
       setCursor(page.next_cursor);
+      if (page.source?.network) setEventsNetwork(page.source.network);
       setApiOnline(true);
     } catch (error) {
       setEventsError(error instanceof Error ? error.message : "Could not load event feed.");
@@ -288,6 +290,7 @@ export default function HomePage() {
 
           <section className="events-section" id="events">
             <div className="panel-heading events-heading"><div><div className="eyebrow">SOROBAN CONTRACT ACTIVITY</div><h2>Flag events</h2><p>Threshold alerts recorded by the Stellar Sentinel contract.</p></div><div className="event-actions"><button className="secondary-button" type="button" onClick={() => downloadEventsCsv(events)} disabled={events.length === 0}>Export CSV</button><button className="icon-button" onClick={() => void loadEvents()} disabled={eventsLoading} aria-label="Refresh events">↻</button></div></div>
+            {eventsNetwork && <p className="events-network-label">Source network: {networkName(eventsNetwork)}</p>}
             <div className="events-panel panel">
               {eventsLoading && events.length === 0 ? <div className="state-message"><span className="spinner dark"/><b>Loading contract events</b><span>Checking the connected Soroban event source…</span></div> : eventsError && events.length === 0 ? <div className="state-message"><span className="state-icon warning">!</span><b>Event feed unavailable</b><span>{eventsError}</span><small>Configure the contract and Soroban RPC in the backend to enable this feed.</small><button className="secondary-button" onClick={() => void loadEvents(eventsRetry?.next, eventsRetry?.append ?? false)}>Try again</button></div> : events.length === 0 ? <div className="state-message"><span className="state-icon">◷</span><b>No flag events yet</b><span>The connected contract has not returned any events.</span></div> : <>
                 <label className="event-search"><span className="sr-only">Search loaded events by account or agent</span><input value={eventSearch} onChange={(event) => setEventSearch(event.target.value)} placeholder="Filter loaded events by account or agent"/></label>
