@@ -78,6 +78,7 @@ function downloadEventsCsv(events: SentinelEvent[]) {
 export default function HomePage() {
   const [address, setAddress] = useState("");
   const [risk, setRisk] = useState<RiskResult | null>(null);
+  const [assessmentHistory, setAssessmentHistory] = useState<RiskResult[]>([]);
   const [riskLoading, setRiskLoading] = useState(false);
   const [riskError, setRiskError] = useState("");
   const [signalSeverity, setSignalSeverity] = useState("all");
@@ -172,13 +173,13 @@ export default function HomePage() {
     try {
       const result = await api<RiskResult>("/risk/score", { method: "POST", body: JSON.stringify({ address: account }) });
       setRisk(result); setApiOnline(true);
+      setAssessmentHistory((current) => [result, ...current.filter((item) => item.address !== result.address)].slice(0, 5));
     } catch (error) {
       setRiskError(error instanceof Error ? error.message : "Could not assess this account.");
       setApiOnline(error instanceof ApiError ? true : false);
     } finally { setRiskLoading(false); }
   }
 
-<<<<<<< HEAD
   async function submitRisk(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     await analyzeAccount(address);
@@ -189,7 +190,8 @@ export default function HomePage() {
     setActiveSection("investigate");
     document.getElementById("investigate")?.scrollIntoView({ behavior: "smooth", block: "start" });
     void analyzeAccount(account);
-=======
+  }
+
   async function copyRiskAddress() {
     if (!risk) return;
     try {
@@ -212,7 +214,15 @@ export default function HomePage() {
       setAddressCopyStatus("Could not copy address");
     }
     window.setTimeout(() => setAddressCopyStatus(""), 2000);
->>>>>>> 61d7ad3 (feat: copy assessed account address)
+  }
+
+  function restoreAssessment(result: RiskResult) {
+    setAddress(result.address);
+    setRisk(result);
+    setRiskError("");
+    setActiveSection("investigate");
+    document.getElementById("investigate")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
   }
 
   const scoreTone = risk?.threshold_exceeded ? "high" : risk?.risk_level === "elevated" ? "medium" : "low";
@@ -256,6 +266,7 @@ export default function HomePage() {
           <section className="screening-card" id="investigate" aria-labelledby="screening-title">
             <div className="screening-copy"><div className="section-icon">⌕</div><div><h2 id="screening-title">Screen an account</h2><p>Assess recent Stellar account activity and understand the signals behind its risk score.</p></div></div>
             <form className="lookup-form" onSubmit={submitRisk}><label className="sr-only" htmlFor="stellar-address">Stellar account address</label><input id="stellar-address" value={address} onChange={(event) => setAddress(event.target.value)} placeholder="Paste a Stellar account address (G…)" autoComplete="off" spellCheck={false}/><button type="submit" disabled={riskLoading || !address.trim()}>{riskLoading ? <><span className="spinner"/> Analyzing</> : <>Analyze account <span>→</span></>}</button></form>
+            {assessmentHistory.length > 1 && <div className="assessment-history"><span>Recent screens</span>{assessmentHistory.map((item) => <button key={item.address} type="button" disabled={riskLoading} aria-label={`Show saved assessment for ${item.address}`} onClick={() => restoreAssessment(item)}>{shortAddress(item.address)}</button>)}</div>}
             <div className="form-hint"><span>◎</span> Account activity is retrieved from Stellar Horizon. Scores are signals for review, not financial or compliance advice.</div>
             {riskError && <div className="notice error" role="alert"><b>Could not analyze account</b><span>{riskError}</span><small>Check the address and confirm the backend is available at {API_BASE}.</small></div>}
           </section>
