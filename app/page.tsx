@@ -80,6 +80,7 @@ export default function HomePage() {
   const [risk, setRisk] = useState<RiskResult | null>(null);
   const [riskLoading, setRiskLoading] = useState(false);
   const [riskError, setRiskError] = useState("");
+  const [signalSeverity, setSignalSeverity] = useState("all");
   const [events, setEvents] = useState<SentinelEvent[]>([]);
   const [eventSearch, setEventSearch] = useState("");
   const [cursor, setCursor] = useState<string | null>(null);
@@ -195,6 +196,9 @@ export default function HomePage() {
   const normalizedEventSearch = eventSearch.trim().toLowerCase();
   const visibleEvents = events.filter((item) =>
     `${item.subject} ${item.agent}`.toLowerCase().includes(normalizedEventSearch),
+  const visibleSignals = (risk?.signals ?? []).filter((signal) =>
+    signalSeverity === "all" || (signal.severity || "info").toLowerCase() === signalSeverity,
+  );
   );
 
   function sectionNavigation(className: string, label: string) {
@@ -236,8 +240,8 @@ export default function HomePage() {
               <article className="score-card panel"><div className="card-label">RISK SCORE <span>OUT OF 100</span></div><div className={`score-value ${scoreTone}`}>{risk.score}<small>/100</small></div><div className="score-meter"><i className={scoreTone} style={{ width: `${Math.max(0, Math.min(100, risk.score))}%` }}/></div><p>{risk.threshold_exceeded ? `Score meets or exceeds the review threshold of ${risk.threshold}.` : `Review threshold: ${risk.threshold}.`}</p><small className="muted">Evaluated {formatDate(risk.as_of)}</small></article>
               <article className="activity-card panel"><div className="card-label">OBSERVED ACCOUNT ACTIVITY <span>{risk.source.network}</span></div><div className="activity-stats"><div><strong>{risk.metrics.operations_scanned.toLocaleString()}</strong><small>Operations scanned</small></div><div><strong>{risk.metrics.operations_in_window.toLocaleString()}</strong><small>Operations in window</small></div><div><strong>{risk.metrics.transfers_in_window.toLocaleString()}</strong><small>Transfers in window</small></div><div><strong>{formatXlm(risk.metrics.transfer_volume_xlm)} <em>XLM</em></strong><small>Transfer volume</small></div><div><strong>{risk.metrics.distinct_counterparties.toLocaleString()}</strong><small>Counterparties</small></div><div><strong>{risk.metrics.account_sequence.toLocaleString()}</strong><small>Account sequence</small></div><div><strong>{formatXlm(risk.metrics.native_xlm_balance)} <em>XLM</em></strong><small>Current balance</small></div></div><div className="data-source"><span className="source-check">✓</span> Activity sourced from <a href={risk.source.horizon_url} target="_blank" rel="noreferrer">Stellar Horizon ↗</a> · last {risk.metrics.window_days} days</div></article>
             </div>
-            <div className="signals-card panel"><div className="panel-heading"><div><h3>Signals behind this assessment</h3><p>Review the activity context used to produce this score.</p></div><span className="count-pill">{risk.signals.length} signals</span></div>
-              {risk.signals.length ? <div className="table-scroll"><table><thead><tr><th>Signal</th><th>Observation</th><th>Severity</th><th>Points</th><th>Why it matters</th><th>Window</th></tr></thead><tbody>{risk.signals.map((signal, index) => <tr key={signal.id ?? `${signal.label}-${index}`}><td className="signal-name"><span className={`severity-dot ${(signal.severity || "").toLowerCase()}`}/>{signal.label}</td><td>{signal.value ?? "—"}</td><td><span className={`severity-tag ${(signal.severity || "info").toLowerCase()}`}>{signal.severity || "Info"}</span></td><td>{signal.points ?? 0}</td><td className="signal-explanation">{signal.explanation || signal.source || "Observed account activity"}</td><td>{signal.window || "Recent activity"}</td></tr>)}</tbody></table></div> : <div className="empty-inline">No notable signals were returned for this assessment.</div>}
+            <div className="signals-card panel"><div className="panel-heading"><div><h3>Signals behind this assessment</h3><p>Review the activity context used to produce this score.</p></div><div className="signal-filter"><label htmlFor="signal-severity">Severity</label><select id="signal-severity" value={signalSeverity} onChange={(event) => setSignalSeverity(event.target.value)}><option value="all">All</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option><option value="info">Info</option></select><span className="count-pill">{visibleSignals.length} / {risk.signals.length}</span></div></div>
+              {visibleSignals.length ? <div className="table-scroll"><table><thead><tr><th>Signal</th><th>Observation</th><th>Severity</th><th>Points</th><th>Why it matters</th><th>Window</th></tr></thead><tbody>{visibleSignals.map((signal, index) => <tr key={signal.id ?? `${signal.label}-${index}`}><td className="signal-name"><span className={`severity-dot ${(signal.severity || "").toLowerCase()}`}/>{signal.label}</td><td>{signal.value ?? "—"}</td><td><span className={`severity-tag ${(signal.severity || "info").toLowerCase()}`}>{signal.severity || "Info"}</span></td><td>{signal.points ?? 0}</td><td className="signal-explanation">{signal.explanation || signal.source || "Observed account activity"}</td><td>{signal.window || "Recent activity"}</td></tr>)}</tbody></table></div> : <div className="empty-inline">{risk.signals.length ? "No signals match this severity." : "No notable signals were returned for this assessment."}</div>}
             </div>
           </section>}
 
