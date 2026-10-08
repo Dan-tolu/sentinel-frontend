@@ -81,6 +81,7 @@ export default function HomePage() {
   const [riskLoading, setRiskLoading] = useState(false);
   const [riskError, setRiskError] = useState("");
   const [signalSeverity, setSignalSeverity] = useState("all");
+  const [addressCopyStatus, setAddressCopyStatus] = useState("");
   const [events, setEvents] = useState<SentinelEvent[]>([]);
   const [eventSearch, setEventSearch] = useState("");
   const [cursor, setCursor] = useState<string | null>(null);
@@ -177,6 +178,7 @@ export default function HomePage() {
     } finally { setRiskLoading(false); }
   }
 
+<<<<<<< HEAD
   async function submitRisk(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     await analyzeAccount(address);
@@ -187,6 +189,30 @@ export default function HomePage() {
     setActiveSection("investigate");
     document.getElementById("investigate")?.scrollIntoView({ behavior: "smooth", block: "start" });
     void analyzeAccount(account);
+=======
+  async function copyRiskAddress() {
+    if (!risk) return;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(risk.address);
+      } else {
+        const input = document.createElement("textarea");
+        input.value = risk.address;
+        input.setAttribute("readonly", "");
+        input.style.position = "fixed";
+        input.style.opacity = "0";
+        document.body.append(input);
+        input.select();
+        const copied = document.execCommand("copy");
+        input.remove();
+        if (!copied) throw new Error("Clipboard access is unavailable.");
+      }
+      setAddressCopyStatus("Address copied");
+    } catch {
+      setAddressCopyStatus("Could not copy address");
+    }
+    window.setTimeout(() => setAddressCopyStatus(""), 2000);
+>>>>>>> 61d7ad3 (feat: copy assessed account address)
   }
 
   const scoreTone = risk?.threshold_exceeded ? "high" : risk?.risk_level === "elevated" ? "medium" : "low";
@@ -235,7 +261,7 @@ export default function HomePage() {
           </section>
 
           {risk && <section className="result-section" aria-live="polite">
-            <div className="result-title"><div><div className="eyebrow">ACCOUNT ASSESSMENT</div><h2>{shortAddress(risk.address)}</h2></div><span className={`risk-badge ${scoreTone}`}>{risk.threshold_exceeded ? "Review threshold exceeded" : `${risk.risk_level} risk signal`}</span></div>
+            <div className="result-title"><div><div className="eyebrow">ACCOUNT ASSESSMENT</div><h2>{shortAddress(risk.address)}</h2><button className="copy-address" type="button" onClick={() => void copyRiskAddress()}>Copy full address</button><span className="sr-only" role="status" aria-live="polite">{addressCopyStatus}</span></div><span className={`risk-badge ${scoreTone}`}>{risk.threshold_exceeded ? "Review threshold exceeded" : `${risk.risk_level} risk signal`}</span></div>
             <div className="result-grid">
               <article className="score-card panel"><div className="card-label">RISK SCORE <span>OUT OF 100</span></div><div className={`score-value ${scoreTone}`}>{risk.score}<small>/100</small></div><div className="score-meter"><i className={scoreTone} style={{ width: `${Math.max(0, Math.min(100, risk.score))}%` }}/></div><p>{risk.threshold_exceeded ? `Score meets or exceeds the review threshold of ${risk.threshold}.` : `Review threshold: ${risk.threshold}.`}</p><small className="muted">Evaluated {formatDate(risk.as_of)}</small></article>
               <article className="activity-card panel"><div className="card-label">OBSERVED ACCOUNT ACTIVITY <span>{risk.source.network}</span></div><div className="activity-stats"><div><strong>{risk.metrics.operations_scanned.toLocaleString()}</strong><small>Operations scanned</small></div><div><strong>{risk.metrics.operations_in_window.toLocaleString()}</strong><small>Operations in window</small></div><div><strong>{risk.metrics.transfers_in_window.toLocaleString()}</strong><small>Transfers in window</small></div><div><strong>{formatXlm(risk.metrics.transfer_volume_xlm)} <em>XLM</em></strong><small>Transfer volume</small></div><div><strong>{risk.metrics.distinct_counterparties.toLocaleString()}</strong><small>Counterparties</small></div><div><strong>{risk.metrics.account_sequence.toLocaleString()}</strong><small>Account sequence</small></div><div><strong>{formatXlm(risk.metrics.native_xlm_balance)} <em>XLM</em></strong><small>Current balance</small></div></div><div className="data-source"><span className="source-check">✓</span> Activity sourced from <a href={risk.source.horizon_url} target="_blank" rel="noreferrer">Stellar Horizon ↗</a> · last {risk.metrics.window_days} days</div></article>
