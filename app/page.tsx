@@ -57,6 +57,24 @@ function networkName(passphrase?: string) {
   return passphrase;
 }
 
+function downloadEventsCsv(events: SentinelEvent[]) {
+  const rows = [
+    ["event_id", "ledger", "created_at", "agent", "account", "score", "contract_id"],
+    ...events.map((event) => [event.id, event.ledger, event.created_at, event.agent, event.subject, event.score, event.contract_id]),
+  ];
+  const csv = rows.map((row) => row.map((value) => {
+    const text = String(value ?? "");
+    const safeText = typeof value === "string" && /^[\t\r ]*[=+@-]/.test(text) ? `'${text}` : text;
+    return `"${safeText.replaceAll('"', '""')}"`;
+  }).join(",")).join("\r\n");
+  const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `stellar-sentinel-events-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
 export default function HomePage() {
   const [address, setAddress] = useState("");
   const [risk, setRisk] = useState<RiskResult | null>(null);
@@ -219,7 +237,7 @@ export default function HomePage() {
           </section>}
 
           <section className="events-section" id="events">
-            <div className="panel-heading events-heading"><div><div className="eyebrow">SOROBAN CONTRACT ACTIVITY</div><h2>Flag events</h2><p>Threshold alerts recorded by the Stellar Sentinel contract.</p></div><button className="icon-button" onClick={() => void loadEvents()} disabled={eventsLoading} aria-label="Refresh events">↻</button></div>
+            <div className="panel-heading events-heading"><div><div className="eyebrow">SOROBAN CONTRACT ACTIVITY</div><h2>Flag events</h2><p>Threshold alerts recorded by the Stellar Sentinel contract.</p></div><div className="event-actions"><button className="secondary-button" type="button" onClick={() => downloadEventsCsv(events)} disabled={events.length === 0}>Export CSV</button><button className="icon-button" onClick={() => void loadEvents()} disabled={eventsLoading} aria-label="Refresh events">↻</button></div></div>
             <div className="events-panel panel">
               {eventsLoading && events.length === 0 ? <div className="state-message"><span className="spinner dark"/><b>Loading contract events</b><span>Checking the connected Soroban event source…</span></div> : eventsError && events.length === 0 ? <div className="state-message"><span className="state-icon warning">!</span><b>Event feed unavailable</b><span>{eventsError}</span><small>Configure the contract and Soroban RPC in the backend to enable this feed.</small><button className="secondary-button" onClick={() => void loadEvents(eventsRetry?.next, eventsRetry?.append ?? false)}>Try again</button></div> : events.length === 0 ? <div className="state-message"><span className="state-icon">◷</span><b>No flag events yet</b><span>The connected contract has not returned any events.</span></div> : <>
                 <div className="table-scroll"><table><thead><tr><th>ACCOUNT</th><th>SCORE</th><th>AGENT</th><th>LEDGER</th><th>RECORDED</th></tr></thead><tbody>{events.map((item) => <tr key={item.id}><td className="signal-name"><span className="severity-dot high"/><button className="event-investigate" type="button" disabled={riskLoading} aria-label={`Analyze account ${item.subject}`} onClick={() => investigateEvent(item.subject)}>{shortAddress(item.subject)} ↗</button></td><td><span className="event-score">{item.score}</span></td><td className="mono">{shortAddress(item.agent)}</td><td className="mono">{item.ledger.toLocaleString()}</td><td>{formatDate(item.created_at)}</td></tr>)}</tbody></table></div>
