@@ -65,3 +65,5 @@ Set `NEXT_PUBLIC_API_BASE_URL` in `.env.local` (default: `http://localhost:8000`
 When the backend identifies the network as Public Network or Testnet, account, contract, and available transaction references link to the matching Stellar Expert explorer. Unknown networks and missing transaction hashes remain plain text.
 
 Keep response changes coordinated with the backend. Errors, loading, and empty states should remain explicit; do not replace missing chain data with sample values.
+
+If a new account screening request fails after a successful assessment, the dashboard keeps the last successful result visible and shows the new request error above it.
