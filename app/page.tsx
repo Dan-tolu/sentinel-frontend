@@ -229,7 +229,6 @@ export default function HomePage() {
     setActiveSection("investigate");
     document.getElementById("investigate")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
-  }
 
   const scoreTone = risk?.threshold_exceeded ? "high" : risk?.risk_level === "elevated" ? "medium" : "low";
   const rpcHealthy = network?.status.toLowerCase() === "healthy";
@@ -238,9 +237,9 @@ export default function HomePage() {
   const normalizedEventSearch = eventSearch.trim().toLowerCase();
   const visibleEvents = events.filter((item) =>
     `${item.subject} ${item.agent}`.toLowerCase().includes(normalizedEventSearch),
+  );
   const visibleSignals = (risk?.signals ?? []).filter((signal) =>
     signalSeverity === "all" || (signal.severity || "info").toLowerCase() === signalSeverity,
-  );
   );
 
   function sectionNavigation(className: string, label: string) {
