@@ -14,7 +14,7 @@ flowchart LR
   Contract[Soroban Sentinel contract] -->|flagged events| RPC
 ```
 
-The browser uses the backend as its only application API. It renders account metrics and signal explanations, the current network/RPC status, and a paginated contract event feed. The event feed requires a deployed contract ID configured in the backend.
+The browser uses the backend as its only application API. It renders account metrics and signal explanations, the current network/RPC status, and a paginated contract event feed. The event feed requires a deployed contract ID configured in the backend. The dashboard keeps up to five successful account assessments in the current page session so analysts can revisit recent results without storing them across reloads.
 
 ## Stellar Testnet deployment
 
